@@ -8,6 +8,7 @@
 #include "MIInteractorComponent.h"
 #include "MInteractionSettings.h"
 #include "MMath.h"
+#include "Engine/OverlapResult.h"
 #include "GameFramework/Character.h"
 
 static TAutoConsoleVariable<bool> CVarShowFirstPersonGathererDebugs(
