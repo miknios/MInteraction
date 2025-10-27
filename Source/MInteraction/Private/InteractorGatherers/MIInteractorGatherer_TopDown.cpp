@@ -7,6 +7,7 @@
 #include "MIInteractableInterface.h"
 #include "MInteractionSettings.h"
 #include "MMath.h"
+#include "Engine/OverlapResult.h"
 
 static TAutoConsoleVariable<bool> CVarShowInteractionArea(
 	TEXT("m.Interaction.ShowInteractionArea"), false, TEXT("Show Interaction Area Gizmo"), ECVF_Default);
