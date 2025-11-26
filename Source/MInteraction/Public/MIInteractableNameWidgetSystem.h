@@ -17,7 +17,7 @@ struct FMINameWidgetInstanceInfo
 	bool bDisplayed = false;
 
 	UPROPERTY()
-	UMIInteractableNameWidget* WidgetInstance;
+	UMIInteractableNameWidget* WidgetInstance = nullptr;
 };
 
 /**

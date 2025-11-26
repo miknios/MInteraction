@@ -13,7 +13,7 @@ struct FMIOnInteractedData
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly)
-	AActor* Instigator;
+	AActor* Instigator = nullptr;
 
 	FMIOnInteractedData()
 	{
