@@ -2,11 +2,11 @@
 
 
 #include "MIInteractorComponent.h"
+
 #include "DrawDebugHelpers.h"
 #include "MIInteractableComponent.h"
-#include "MIInteractableNameWidgetSystem.h"
-#include "InteractorGatherers/MIInteractorGatherer_Base.h"
-#include "Kismet/GameplayStatics.h"
+#include "MIInteractableFunctionLibrary.h"
+#include "MPointSelectorQueryLibrary.h"
 
 UMIInteractorComponent::UMIInteractorComponent()
 {
@@ -16,10 +16,7 @@ UMIInteractorComponent::UMIInteractorComponent()
 void UMIInteractorComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	InteractorGathererInstance = NewObject<UMIInteractorGatherer_Base>(this, InteractorGathererClass);
 }
-
 
 void UMIInteractorComponent::TickComponent(float DeltaTime, ELevelTick TickType,
                                            FActorComponentTickFunction* ThisTickFunction)
@@ -33,8 +30,18 @@ void UMIInteractorComponent::Interact()
 {
 	if (InteractableFocused)
 	{
-		ServerRPCInteract(InteractableFocused);
+		ServerRPCInteract(InteractableFocused.GetObject());
 	}
+}
+
+TArrayView<const TScriptInterface<IMIInteractableInterface>> UMIInteractorComponent::GetInteractablesInRange() const
+{
+	return InteractablesInRange;
+}
+
+const TScriptInterface<IMIInteractableInterface>& UMIInteractorComponent::GetInteractableFocused() const
+{
+	return InteractableFocused;
 }
 
 void UMIInteractorComponent::ServerRPCInteract_Implementation(UObject* Interactable)
@@ -42,66 +49,95 @@ void UMIInteractorComponent::ServerRPCInteract_Implementation(UObject* Interacta
 	IMIInteractableInterface::Execute_Interact(Interactable, GetOwner());
 }
 
-void UMIInteractorComponent::OnInteractableFocusBegin_Implementation(UObject* Interactable)
+void UMIInteractorComponent::OnInteractableFocusBegin_Implementation(const TScriptInterface<IMIInteractableInterface>& Interactable)
 {
 }
 
-void UMIInteractorComponent::OnInteractableFocusLost_Implementation(UObject* Interactable)
+void UMIInteractorComponent::OnInteractableFocusLost_Implementation(const TScriptInterface<IMIInteractableInterface>& Interactable)
 {
 }
 
 void UMIInteractorComponent::GatherInteractablesInRange()
 {
-	if (!InteractorGathererInstance)
-		return;
-
 	if (GetOwnerRole() < ROLE_AutonomousProxy)
+	{
 		return;
+	}
 
 	const APawn* Pawn = Cast<APawn>(GetOwner());
 	if (!Pawn)
+	{
 		return;
+	}
 
 	const APlayerController* PlayerController = Cast<APlayerController>(Pawn->GetController());
 	if (!PlayerController)
+	{
 		return;
+	}
 
 	const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
 	if (!LocalPlayer)
-		return;
-
-	TSet<UObject*> InteractablesInRange;
-	TOptional<UObject*> InteractableToFocus;
-	InteractorGathererInstance->GatherInteractables(this, InteractablesInRange, InteractableToFocus);
-
-	UMIInteractableNameWidgetSystem::Get(LocalPlayer)
-		->SetInteractablesInRange(InteractablesInRange);
-
-	if (InteractableToFocus.IsSet())
 	{
-		if (InteractableFocused != InteractableToFocus)
-		{
-			if (InteractableFocused != nullptr)
-			{
-				IMIInteractableInterface::Execute_DisableInteractableFocused(InteractableFocused);
+		return;
+	}
 
-				OnInteractableFocusLost(InteractableFocused);
+	FVector ReferenceLocation;
+	FRotator EyesViewPointRot;
+	Pawn->GetActorEyesViewPoint(ReferenceLocation, EyesViewPointRot);
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(Pawn);
+
+	const TArray<FMPointSelectorQueryScoredPointData> Points = UMPointSelectorQueryLibrary::QueryPoints(
+		this, ReferenceLocation, Pawn->GetActorForwardVector(), QuerySettingsAsset, QueryParams);
+
+	InteractablesInRange.Empty();
+
+	// Update interactables in range
+	Algo::Transform(
+		Points.FilterByPredicate([](const FMPointSelectorQueryScoredPointData& Point)
+		{
+			const AActor* LookAtTargetActor = IMSelectorQueryPointInterface::Execute_GetActorOwner(Point.LookAtPoint.GetObject());
+			if (LookAtTargetActor == nullptr)
+			{
+				return false;
 			}
 
-			InteractableFocused = InteractableToFocus.GetValue();
-			IMIInteractableInterface::Execute_EnableInteractableFocused(InteractableToFocus.GetValue());
+			const bool bInteractable = UMIInteractableFunctionLibrary::IsActorInteractable(LookAtTargetActor);
+			return bInteractable;
+		}),
+		InteractablesInRange,
+		[](const FMPointSelectorQueryScoredPointData& Point)
+		{
+			const AActor* LookAtTargetActor = IMSelectorQueryPointInterface::Execute_GetActorOwner(Point.LookAtPoint.GetObject());
+			TScriptInterface<IMIInteractableInterface> Interactable =
+				UMIInteractableFunctionLibrary::GetInteractableFromActor(LookAtTargetActor);
+			return MoveTemp(Interactable);
+		});
 
-			OnInteractableFocusBegin(InteractableToFocus.GetValue());
-		}
-	}
-	else
+	// If there's any interactable in range focus the first one - it should be the one that has the highest score
+	TOptional<TScriptInterface<IMIInteractableInterface>> InteractableToFocus =
+		InteractablesInRange.Num() > 0
+			? TOptional(InteractablesInRange[0])
+			: NullOpt;
+
+	if (InteractableToFocus.IsSet() && InteractableFocused != InteractableToFocus.GetValue())
 	{
 		if (InteractableFocused != nullptr)
 		{
-			IMIInteractableInterface::Execute_DisableInteractableFocused(InteractableFocused);
-			InteractableFocused = nullptr;
-
+			IMIInteractableInterface::Execute_DisableInteractableFocused(InteractableFocused.GetObject());
 			OnInteractableFocusLost(InteractableFocused);
 		}
+
+		InteractableFocused = InteractableToFocus.GetValue();
+		IMIInteractableInterface::Execute_EnableInteractableFocused(InteractableFocused.GetObject());
+		OnInteractableFocusBegin(InteractableFocused);
+	}
+	else if (!InteractableToFocus.IsSet() && InteractableFocused != nullptr)
+	{
+		IMIInteractableInterface::Execute_DisableInteractableFocused(InteractableFocused.GetObject());
+		OnInteractableFocusLost(InteractableFocused);
+		InteractableFocused = nullptr;
 	}
 }

@@ -2,3 +2,8 @@
 
 
 #include "MInteractionSettings.h"
+
+UMInteractionSettings* UMInteractionSettings::Get()
+{
+	return CastChecked<UMInteractionSettings>(StaticClass()->GetDefaultObject());
+}

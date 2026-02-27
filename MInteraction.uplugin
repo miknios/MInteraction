@@ -24,6 +24,10 @@
 		{
 			"Name": "MUtility",
 			"Enabled": true
+		},
+		{
+			"Name": "MPointSelectorQuery",
+			"Enabled": true
 		}
 	]
 }

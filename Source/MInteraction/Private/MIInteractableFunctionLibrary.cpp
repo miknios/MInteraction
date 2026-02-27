@@ -1,18 +1,34 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "MIInteractableFunctionLibrary.h"
 #include "MIInteractableInterface.h"
 
-bool UMIInteractableFunctionLibrary::IsInteractable(AActor* Actor)
+bool UMIInteractableFunctionLibrary::IsActorInteractable(const AActor* Actor)
 {
-	return Actor->Implements<UMIInteractableInterface>()
-		|| Actor->FindComponentByInterface<IMIInteractableInterface>() != nullptr;
+	if (Actor == nullptr)
+	{
+		return false;
+	}
+
+	if (Actor->Implements<UMIInteractableInterface>())
+	{
+		return true;
+	}
+
+	const IMIInteractableInterface* InteractableInterface = Actor->FindComponentByInterface<IMIInteractableInterface>();
+	const bool bResult = InteractableInterface != nullptr;
+	return bResult;
 }
 
 bool UMIInteractableFunctionLibrary::IsObjectInteractable(UObject* Object)
 {
-	return Object->Implements<UMIInteractableInterface>();
+	if (AActor* Actor = Cast<AActor>(Object))
+	{
+		return IsActorInteractable(Actor);
+	}
+
+	const bool bResult = Object->Implements<UMIInteractableInterface>();
+	return bResult;
 }
 
 bool UMIInteractableFunctionLibrary::Interact(AActor* Actor)
@@ -37,19 +53,35 @@ bool UMIInteractableFunctionLibrary::Interact(AActor* Actor)
 	return false;
 }
 
-UObject* UMIInteractableFunctionLibrary::GetInteractableFromActor(AActor* Actor)
+TScriptInterface<IMIInteractableInterface> UMIInteractableFunctionLibrary::GetInteractableFromActor(const AActor* Actor)
 {
-	UObject* ResultingObject = nullptr;
-
 	if (Actor->Implements<UMIInteractableInterface>())
 	{
-		ResultingObject = Actor;
-	}
-	else if (IMIInteractableInterface* InteractableComponent =
-		Actor->FindComponentByInterface<IMIInteractableInterface>())
-	{
-		ResultingObject = Cast<UObject>(InteractableComponent);
+		return const_cast<AActor*>(Actor);
 	}
 
-	return ResultingObject;
+	if (IMIInteractableInterface* InteractableComponent =
+		Actor->FindComponentByInterface<IMIInteractableInterface>())
+	{
+		return InteractableComponent->_getUObject();
+	}
+
+	return nullptr;
+}
+
+AActor* UMIInteractableFunctionLibrary::GetActorFromInteractable(TScriptInterface<IMIInteractableInterface> Interactable)
+{
+	UObject* InteractableObject = Interactable.GetObject();
+	if (!IsValid(InteractableObject))
+	{
+		return nullptr;
+	}
+
+	if (AActor* ActorThis = Cast<AActor>(InteractableObject))
+	{
+		return ActorThis;
+	}
+
+	AActor* ActorOuter = Cast<AActor>(InteractableObject->GetOuter());
+	return ActorOuter;
 }

@@ -3,7 +3,7 @@
 
 #include "MIInteractableInterface.h"
 
-bool IMIInteractableInterface::CanInteract_Implementation(AActor* Instigator)
+bool IMIInteractableInterface::CanInteract_Implementation(const AActor* Instigator)
 {
 	return true;
 }

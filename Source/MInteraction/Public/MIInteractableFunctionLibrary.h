@@ -6,11 +6,9 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "MIInteractableFunctionLibrary.generated.h"
 
+class IMIInteractableInterface;
 class UMIInteractableComponent;
 
-/**
- * 
- */
 UCLASS(meta=(ScriptName="InteractableLibrary"))
 class MINTERACTION_API UMIInteractableFunctionLibrary : public UBlueprintFunctionLibrary
 {
@@ -18,7 +16,7 @@ class MINTERACTION_API UMIInteractableFunctionLibrary : public UBlueprintFunctio
 
 public:
 	UFUNCTION(BlueprintCallable)
-	static bool IsInteractable(AActor* Actor);
+	static bool IsActorInteractable(const AActor* Actor);
 
 	UFUNCTION(BlueprintCallable)
 	static bool IsObjectInteractable(UObject* Object);
@@ -27,5 +25,8 @@ public:
 	static bool Interact(AActor* Actor);
 
 	UFUNCTION(BlueprintCallable)
-	static UObject* GetInteractableFromActor(AActor* Actor);
+	static TScriptInterface<IMIInteractableInterface> GetInteractableFromActor(const AActor* Actor);
+	
+	UFUNCTION(BlueprintCallable)
+	static AActor* GetActorFromInteractable(TScriptInterface<IMIInteractableInterface> Interactable);
 };

@@ -13,13 +13,13 @@ struct FMIOnInteractedData
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly)
-	AActor* Instigator = nullptr;
+	const AActor* Instigator = nullptr;
 
 	FMIOnInteractedData()
 	{
 	}
 
-	FMIOnInteractedData(AActor* Instigator)
+	explicit FMIOnInteractedData(const AActor* Instigator)
 		: Instigator(Instigator)
 	{
 	}
@@ -38,26 +38,13 @@ class MINTERACTION_API UMIInteractableComponent : public UActorComponent, public
 public:
 	UMIInteractableComponent();
 
-	virtual bool Interact_Implementation(AActor* Instigator) override;
-	virtual bool CanInteract_Implementation(AActor* Instigator) override;
+	virtual bool Interact_Implementation(const AActor* Instigator) override;
+	virtual bool CanInteract_Implementation(const AActor* Instigator) override;
 	virtual void EnableInteractableFocused_Implementation() override;
 	virtual void DisableInteractableFocused_Implementation() override;
 	virtual bool IsFocused_Implementation() override;
 	virtual void EnableInteraction_Implementation() override;
 	virtual void DisableInteraction_Implementation() override;
-	virtual FText GetDisplayName_Implementation() override;
-	virtual FText GetInteractionVerb_Implementation() override;
-	virtual FVector GetObjectNameAnchorPos_Implementation() override;
-
-public:
-	UPROPERTY(EditDefaultsOnly, Category = "Interactable")
-	FText DisplayName;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Interactable")
-	FText InteractionVerb;
-
-	UPROPERTY(EditAnywhere, Category = "Interactable")
-	FVector ObjectNameAnchorOffset;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnInteractedSignature OnInteractedDelegate;

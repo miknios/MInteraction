@@ -21,12 +21,12 @@ class MINTERACTION_API IMIInteractableInterface
 
 public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	bool Interact(AActor* Instigator);
+	bool Interact(const AActor* Instigator);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	bool CanInteract(AActor* Instigator);
+	bool CanInteract(const AActor* Instigator);
 	
-	virtual bool CanInteract_Implementation(AActor* Instigator);
+	virtual bool CanInteract_Implementation(const AActor* Instigator);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void EnableInteractableFocused();
@@ -42,13 +42,4 @@ public:
 	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void DisableInteraction();
-
-	UFUNCTION(BlueprintNativeEvent)
-	FText GetDisplayName();
-
-	UFUNCTION(BlueprintNativeEvent)
-	FText GetInteractionVerb();
-
-	UFUNCTION(BlueprintNativeEvent)
-	FVector GetObjectNameAnchorPos();
 };

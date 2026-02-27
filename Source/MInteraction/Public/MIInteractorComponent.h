@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "MIInteractorComponent.generated.h"
 
+class UMPointSelectorQuerySettingsAsset;
 class UMIInteractorGatherer_Base;
 class UWidget;
 class IMIInteractableInterface;
@@ -23,8 +24,10 @@ class MINTERACTION_API UMIInteractorComponent : public UActorComponent
 public:
 	UMIInteractorComponent();
 
+	// UActorComponent
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	// ~ UActorComponent
 
 	UFUNCTION(BlueprintCallable, Category = "Interactor")
 	void Interact();
@@ -32,30 +35,33 @@ public:
 	UFUNCTION(Server, Reliable)
 	void ServerRPCInteract(UObject* Interactable);
 
+	TArrayView<const TScriptInterface<IMIInteractableInterface>> GetInteractablesInRange() const;
+	const TScriptInterface<IMIInteractableInterface>& GetInteractableFocused() const;
+
 protected:
 	/**
 	 *	Additional functionality when new interactable is in focus should be implemented in game module by extending this
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interactor")
-	void OnInteractableFocusBegin(UObject* Interactable);
-	virtual void OnInteractableFocusBegin_Implementation(UObject* Interactable);
+	void OnInteractableFocusBegin(const TScriptInterface<IMIInteractableInterface>& Interactable);
+	virtual void OnInteractableFocusBegin_Implementation(const TScriptInterface<IMIInteractableInterface>& Interactable);
 
 	/**
 	 *	Additional functionality when interactable focus is lost should be implemented in game module by extending this
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interactor")
-	void OnInteractableFocusLost(UObject* Interactable);
-	virtual void OnInteractableFocusLost_Implementation(UObject* Interactable);
+	void OnInteractableFocusLost(const TScriptInterface<IMIInteractableInterface>& Interactable);
+	virtual void OnInteractableFocusLost_Implementation(const TScriptInterface<IMIInteractableInterface>& Interactable);
 
+	UPROPERTY(EditAnywhere, Category = "Interactor")
+	TObjectPtr<UMPointSelectorQuerySettingsAsset> QuerySettingsAsset;
+
+	UPROPERTY(Transient, VisibleInstanceOnly, Category = "Interactor")
+	TScriptInterface<IMIInteractableInterface> InteractableFocused;
+
+	UPROPERTY(Transient, VisibleInstanceOnly, Category = "Interactor")
+	TArray<TScriptInterface<IMIInteractableInterface>> InteractablesInRange;
+
+private:
 	void GatherInteractablesInRange();
-
-protected:
-	UPROPERTY(EditDefaultsOnly, Category = "Interactor")
-	TSubclassOf<UMIInteractorGatherer_Base> InteractorGathererClass;
-
-	UPROPERTY(VisibleInstanceOnly, Category = "Interactor")
-	UObject* InteractableFocused;
-
-	UPROPERTY()
-	UMIInteractorGatherer_Base* InteractorGathererInstance;
 };

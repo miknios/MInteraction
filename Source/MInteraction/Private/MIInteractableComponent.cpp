@@ -12,7 +12,7 @@ UMIInteractableComponent::UMIInteractableComponent()
 	bEnabled = true;
 }
 
-bool UMIInteractableComponent::Interact_Implementation(AActor* Instigator)
+bool UMIInteractableComponent::Interact_Implementation(const AActor* Instigator)
 {
 	if (Execute_CanInteract(this, Instigator))
 	{
@@ -29,7 +29,7 @@ bool UMIInteractableComponent::Interact_Implementation(AActor* Instigator)
 }
 
 
-bool UMIInteractableComponent::CanInteract_Implementation(AActor* Instigator)
+bool UMIInteractableComponent::CanInteract_Implementation(const AActor* Instigator)
 {
 	return bEnabled;
 }
@@ -51,25 +51,10 @@ bool UMIInteractableComponent::IsFocused_Implementation()
 
 void UMIInteractableComponent::EnableInteraction_Implementation()
 {
-	bEnabled = false;
+	bEnabled = true;
 }
 
 void UMIInteractableComponent::DisableInteraction_Implementation()
 {
-	bEnabled = true;
-}
-
-FText UMIInteractableComponent::GetDisplayName_Implementation()
-{
-	return DisplayName;
-}
-
-FText UMIInteractableComponent::GetInteractionVerb_Implementation()
-{
-	return InteractionVerb;
-}
-
-FVector UMIInteractableComponent::GetObjectNameAnchorPos_Implementation()
-{
-	return GetOwner()->GetActorLocation() + ObjectNameAnchorOffset;
+	bEnabled = false;
 }
