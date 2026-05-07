@@ -28,6 +28,10 @@
 		{
 			"Name": "MPointSelectorQuery",
 			"Enabled": true
+		},
+		{
+			"Name": "SDFutureExtensions",
+			"Enabled": true
 		}
 	]
 }
